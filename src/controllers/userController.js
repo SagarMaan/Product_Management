@@ -212,3 +212,65 @@ const register = async function (req, res) {
 };
 
 
+
+//==================================== Login User ============================================//
+
+
+const userLogin = async function (req, res) {
+    try {
+      let { email, password } = req.body;
+  
+      if (Object.keys(req.body).length == 0) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please input user Details" });
+      }
+  
+      if (!email) {
+        return res
+          .status(400)
+          .send({ status: false, message: "EmailId is mandatory" });
+      }
+  
+      if (!validateEmail(email)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "EmailId should be Valid" });
+      }
+  
+      if (!password) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Password is mandatory" });
+      }
+  
+      let verifyUser = await userModel.findOne({ email: email });
+      if (!verifyUser) {
+        return res
+        .status(400)
+        .send({ status: false, message: "user not found" });
+      }
+  
+      let hash = verifyUser.password;
+  
+      let isCorrect = bcrypt.compareSync(password, hash);
+      if (!isCorrect)
+        return res
+          .status(400)
+          .send({ status: false, message: "Password is incorrect" });
+  
+      let payload = { userId: verifyUser["_id"], iat: Date.now() };
+      let token = jwt.sign(payload, "group-13-project", { expiresIn: "1h" });
+  
+      res.setHeader("x-api-key", token);
+      return res.status(200).send({
+        status: true,
+        message: "User login successfull",
+        data: { userId: verifyUser["_id"], token },
+      });
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
+  
