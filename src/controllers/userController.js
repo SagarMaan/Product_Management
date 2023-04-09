@@ -274,3 +274,28 @@ const userLogin = async function (req, res) {
   };
   
   
+//======================================== Get User ==========================================//
+
+
+const getUsers = async function (req, res) {
+    try {
+      let userId = req.params.userId;
+  
+      if (!isValidObjectId(userId))
+        return res
+          .status(400)
+          .send({ status: false, message: "User is invalid" });
+  
+      let getData = await userModel.findOne({ _id: userId });
+  
+      if (!getData)
+        return res.status(404).send({ status: false, message: "user not found" });
+        
+      return res
+        .status(200)
+        .send({ status: true, message: "User profile details", data: getData });
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
