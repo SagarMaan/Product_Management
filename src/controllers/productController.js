@@ -297,4 +297,183 @@ const getProductById = async function (req, res) {
   
   
   
+
+//================================= Update Product ================================================//
+
+
+
+const updateProduct = async function (req, res) {
+    try {
+      let productId = req.params.productId;
+  
+      if (!isValidObjectId(productId))
+        return res
+          .status(404)
+          .send({ status: false, message: "Product Id is invalid." });
+  
+      let getproductId = await productModel.findOne({ _id: productId });
+      if (!getproductId)
+        return res
+          .status(404)
+          .send({ status: false, message: "Product Id not found." });
+  
+      let data = req.body;
+  
+      let files = req.files;
+  
+      let {
+        title,
+        description,
+        price,
+        isFreeShipping,
+        style,
+        availableSizes,
+        installments,
+      } = data;
+  
+      if (Object.keys(data).length == 0 && (!files || files.length == 0))
+        return res
+          .status(400)
+          .send({ status: false, message: "At least one field is mendatory." });
+  
+      let updatedData = {};
+  
+      if (title) {
+        if (!validateName(title)) {
+          return res
+            .status(400)
+            .send({ status: false, message: "Product title must be string." });
+        }
+        if (!title) {
+          return res
+            .status(400)
+            .send({ status: false, message: "Product title can not be empty." });
+        }
+  
+        let checkTitle = await productModel.findOne({ title: title });
+  
+        if (checkTitle) {
+          return res.status(400).send({
+            status: false,
+            message:
+              "This product title is already used ,please provide another product title.",
+          });
+        }
+        title = title.trim();
+        updatedData.title = title;
+      }
+      if (description) {
+        if (!validateDescription(description)) {
+          return res.status(400).send({
+            status: false,
+            message: "Product description must be string.",
+          });
+        }
+        if (!description.trim()) {
+          return res.status(400).send({
+            status: false,
+            message: "Product description can not be empty.",
+          });
+        }
+        description = description.trim();
+        updatedData.description = description;
+      }
+      if (price) {
+        if (!validatePrice(price)) {
+          return res
+            .status(400)
+            .send({ status: false, message: "Product price must be number." });
+        }
+        if (!price.trim()) {
+          return res
+            .status(400)
+            .send({ status: false, message: "Product price can not be empty." });
+        }
+        price = price.trim();
+        updatedData.price = Number(price).toFixed(2);
+      }
+  
+      if (isFreeShipping) {
+        if (
+          !(isFreeShipping.trim() == "true" || isFreeShipping.trim() == "false")
+        ) {
+          return res.status(400).send({
+            status: false,
+            message: "isFreeShipping should either be True, or False.",
+          });
+        }
+      }
+  
+      if (!isFreeShipping) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping can not be empty for product.",
+        });
+      }
+      isFreeShipping = isFreeShipping.trim();
+      updatedData.isFreeShipping = isFreeShipping;
+  
+      if (!style) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Product style can not be empty." });
+      }
+      updatedData.style = style;
+  
+      if (availableSizes) {
+        if (!["S", "XS", "M", "X", "L", "XXL", "XL"].includes(availableSizes)) {
+          return res.status(400).send({
+            status: false,
+            message: `Product sizes must be from these["S", "XS", "M", "X", "L", "XXL", "XL"].`,
+          });
+        }
+        if (!availableSizes.trim()) {
+          return res
+            .status(400)
+            .send({ status: false, message: "Product sizes can not be empty." });
+        }
+        availableSizes = availableSizes.trim();
+        updatedData.availableSizes = availableSizes;
+      }
+      if (installments) {
+        if (!validatePincode(installments)) {
+          return res.status(400).send({
+            status: false,
+            message: "Product installments must be number.",
+          });
+        }
+        if (!installments.trim()) {
+          return res.status(400).send({
+            status: false,
+            message: "Product installments can not be empty.",
+          });
+        }
+        installments = installments.trim();
+        updatedData.installments = installments;
+      }
+      updatedData.deletedAt = Date.now();
+  
+      let updatedProductData = await productModel.findOneAndUpdate(
+        { _id: productId, isDeleted: false },
+        updatedData,
+        { new: true }
+      );
+  
+      if (!updatedProductData) {
+        return res.status(404).send({
+          status: false,
+          message: "Product is not exist either it is deleted.",
+        });
+      }
+  
+      return res
+        .status(200)
+        .send({ status: true, message: "Success", data: updatedProductData });
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
+  
+  
   
