@@ -476,4 +476,45 @@ const updateProduct = async function (req, res) {
   
   
   
+//================================= Delete Product ================================================//
+
+
+
+const deleteProduct = async function (req, res) {
+    try {
+      let productId = req.params.productId;
+  
+      if (!isValidObjectId(productId)) {
+        return res
+          .status(404)
+          .send({ status: false, message: "please provide valid productid" });
+      }
+  
+      let checkProductId = await productModel.findOneAndUpdate(
+        { _id: productId, isDeleted: false },
+        { isDeleted: true, deletedAt: Date.now() }
+      );
+  
+      if (!checkProductId) {
+        return res
+          .status(404)
+          .send({ status: false, message: " Product already deleted." });
+      }
+  
+      return res
+        .status(200)
+        .send({ status: true, message: "Product successsfully deleted." });
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
+  module.exports = {
+    createProduct,
+    getProductById,
+    getProducts,
+    updateProduct,
+    deleteProduct,
+  };
+  
   
