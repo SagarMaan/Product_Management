@@ -176,3 +176,54 @@ const createCart = async function (req, res) {
 };
 
 
+
+//================================= Get Cart ================================================//
+
+
+
+const getCart = async function (req, res) {
+    try {
+      let userId = req.params.userId;
+  
+      if (userId) {
+        if (!isValidObjectId(userId))
+          return res
+            .status(400)
+            .send({ status: false, message: "Please provide correct UserId." });
+      }
+  
+      let checkUserId = await userModel.findById(userId);
+  
+      if (!checkUserId) {
+        return res
+          .status(404)
+          .send({ status: false, message: "No user found with this userId." });
+      }
+  
+      let getCartData = await cartModel.findOne({ userId: userId });
+  
+      if (!getCartData) {
+        return res
+          .status(404)
+          .send({ status: false, message: "Cart not found with this userId." });
+      }
+  
+      if (getCartData.items.length == 0) {
+        return res
+          .status(400)
+          .send({
+            status: false,
+            message: "Items details not found or it may be deleted.",
+          });
+      }
+  
+      return res
+        .status(200)
+        .send({ status: true, message: "Success", data: getCartData });
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
+  
+  
