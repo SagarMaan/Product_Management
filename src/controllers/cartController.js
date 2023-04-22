@@ -426,3 +426,43 @@ const updateCart = async function (req, res) {
   
   
   
+//================================= Delete Cart ================================================//
+
+
+const deleteCart = async function (req, res) {
+    try {
+      let userId = req.params.userId;
+  
+      if (!isValidObjectId(userId)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please provide valid userId. " });
+      }
+  
+      let cartDeleted = await cartModel.findOneAndUpdate(
+        { userId: userId },
+        { $set: { items: [], totalPrice: 0, totalItem: 0 } },
+        { new: true }
+      );
+  
+      if (!cartDeleted) {
+        return res
+          .status(404)
+          .send({
+            status: false,
+            message: "Cart does not exit in with this userId.",
+          });
+      }
+  
+      return res
+        .status(204)
+        .send({ status: true, message: "Cart succesully deleted." });
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
+  
+  
+  module.exports = { createCart, getCart, updateCart, deleteCart };
+  
