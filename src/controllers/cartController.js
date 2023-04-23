@@ -227,3 +227,202 @@ const getCart = async function (req, res) {
   
   
   
+  
+//================================= Update Cart ================================================//
+
+
+const updateCart = async function (req, res) {
+    try {
+      let userId = req.params.userId;
+  
+      if (!isValidObjectId(userId)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please provide valid user id." });
+      }
+  
+      let checkUserId = await userModel.findById(userId);
+  
+      if (!checkUserId) {
+        return res
+          .status(404)
+          .send({
+            status: false,
+            message:
+              "This userID does not exsit in your database , check your userId.",
+          });
+      }
+  
+      let body = req.body;
+      let { cartId, productId, removeProduct } = body;
+  
+      if (Object.keys(body).length == 0) {
+        return res
+          .status(400)
+          .send({
+            status: false,
+            message:
+              "You can not update empty body,please provide required credentials.",
+          });
+      }
+  
+      if (!cartId) {
+        return res
+          .status(400)
+          .sedn({ status: false, message: "Please provide cartId." });
+      }
+  
+      if (!isValidObjectId(cartId)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please provide valid cart id." });
+      }
+  
+      let checkCartId = await cartModel.findById(cartId);
+  
+      if (!checkCartId) {
+        return res
+          .status(404)
+          .send({
+            status: false,
+            message:
+              "This cartID does not exsit in your database , check your cartId.",
+          });
+      }
+  
+      if (checkCartId.userId != userId) {
+        return res
+          .status(401)
+          .send({
+            status: false,
+            message: "This is not your cartId enter your own cart Id.",
+          });
+      }
+  
+      if (checkCartId.items.length == 0) {
+        return res
+          .status(400)
+          .send({
+            status: false,
+            message:
+              "There are no items left in this cart or it might be deleted.",
+          });
+      }
+  
+      if (!productId) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please provide productId" });
+      }
+  
+      if (!isValidObjectId(productId)) {
+        return res
+          .status(400)
+          .send({ status: false, message: "Please provide valid product id." });
+      }
+  
+      let checkProductId = await productModel.findOne({
+        _id: productId,
+        isDeleted: false,
+      });
+  
+      if (!checkProductId) {
+        return res
+          .status(404)
+          .send({
+            status: false,
+            message:
+              "This productID does not exsit in your database , it might be deleted.",
+          });
+      }
+  
+      if (!removeProduct) {
+        return res
+          .status(400)
+          .send({
+            status: false,
+            message: "Please provide remove product data.",
+          });
+      }
+  
+      if (removeProduct != 0 && removeProduct != 1) {
+        return res
+          .status(400)
+          .send({
+            status: false,
+            message:
+              "Enter 0 for remove Product or 1 for decrement Product quantity.",
+          });
+      }
+  
+      for (i = 0; i < checkCartId.items.length; i++) {
+        if (checkCartId.items[i].productId == productId) {
+          if (removeProduct == 1 && checkCartId.items[i].quantity > 1) {
+            checkCartId.items[i].quantity = checkCartId.items[i].quantity - 1;
+            checkCartId.totalPrice =
+              checkCartId.totalPrice -
+              checkCartId.items[i].quantity * checkProductId.price;
+  
+            checkCartId.save();
+  
+            return res
+              .status(200)
+              .send({ status: true, message: " Success ", data: checkCartId });
+          }
+  
+          if (removeProduct == 1 && checkCartId.items[i].quantity == 1) {
+            let newItems = {
+              productId: checkCartId.items[i].productId,
+              quantity: checkCartId.items[i].quantity,
+            };
+            let totalPrice =
+              checkCartId.totalPrice -
+              checkCartId.items[i].quantity * checkProductId.price;
+  
+            let updatedCart = await cartModel.findOneAndUpdate(
+              { _id: cartId },
+              {
+                $pull: { items: newItems },
+                totalPrice: totalPrice,
+                $inc: { totalItems: -1 },
+              },
+              { new: true }
+            );
+  
+            return res
+              .status(200)
+              .send({ status: true, message: true, data: updatedCart });
+          }
+  
+          if (removeProduct == 0 && checkCartId.items[i].quantity >= 1) {
+            let newItems = {
+              productId: checkCartId.items[i].productId,
+              quantity: checkCartId.items[i].quantity,
+            };
+            let totalPrice =
+              checkCartId.totalPrice -
+              checkCartId.items[i].quantity * checkProductId.price;
+  
+            let updatedCart = await cartModel.findOneAndUpdate(
+              { _id: cartId },
+              {
+                $pull: { items: newItems },
+                totalPrice: totalPrice,
+                $inc: { totalItems: -1 },
+              },
+              { new: true }
+            );
+  
+            return res
+              .status(200)
+              .send({ status: true, message: true, data: updatedCart });
+          }
+        }
+      }
+    } catch (error) {
+      return res.status(500).send({ status: false, message: error.message });
+    }
+  };
+  
+  
+  
